@@ -12,7 +12,16 @@ import (
 )
 
 var (
-	ns string
+	ns          string
+	resourceMap = map[string]string{
+		"deploy": "deployment",
+		"svc":    "svc",
+		"pod":    "pod",
+	}
+	actionMap = map[string]string{
+		"get":  "get",
+		"desc": "describe",
+	}
 )
 
 func NewCmd() *cobra.Command {
@@ -24,13 +33,49 @@ func NewCmd() *cobra.Command {
 			if len(os.Args) <= 2 {
 				return
 			}
+			if len(os.Args) >= 5 {
+				action := actionMap[os.Args[2]]
+				if action != "" {
+					r := resourceMap[os.Args[3]]
+					if r == "" {
+						return
+					}
+					pod := searchResource(os.Args[4], ns, r)
+					if pod == "" {
+						return
+					}
+					var args []string
+					if ns != "" {
+						args = append(args, []string{"-n", ns}...)
+					}
+					args = append(args, []string{action, r, pod}...)
+					if len(os.Args) >= 6 {
+						for i := 5; i < len(os.Args); i++ {
+							if os.Args[i] == "--" {
+								continue
+							}
+							args = append(args, os.Args[i])
+						}
+					}
+
+					cmd := exec.Command("kubectl", args...)
+					cmd.Stdin = os.Stdin
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+
+					fmt.Println("cmd: ", cmd.String())
+					_ = cmd.Run()
+					return
+				}
+			}
+
 			args := os.Args[2:len(os.Args)]
 			cmd := exec.Command("kubectl", args...)
 			cmd.Stdin = os.Stdin
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 
-			fmt.Println()
+			fmt.Println("cmd: ", cmd.String())
 			_ = cmd.Run()
 		},
 	}
@@ -43,9 +88,9 @@ func NewCmd() *cobra.Command {
 	return &k8sCmd
 }
 
-func searchPod(pod, ns string) string {
+func searchResource(pod, ns, resource string) string {
 	shell := fmt.Sprintf(
-		"%s get pods | grep -e '%s' | awk '{print $1}'", kubectl(ns), pod,
+		"%s get %s | grep -e '%s' | awk '{print $1}'", kubectl(ns), resource, pod,
 	)
 
 	cmd := exec.Command("bash", "-c", shell)

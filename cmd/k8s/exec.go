@@ -21,7 +21,7 @@ func newExecCmd() *cobra.Command {
 			return nil
 		},
 		Run: func(c *cobra.Command, args []string) {
-			pod := searchPod(args[0], ns)
+			pod := searchResource(args[0], ns, "pods")
 			if pod == "" {
 				return
 			}
