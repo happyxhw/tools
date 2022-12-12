@@ -1,0 +1,15 @@
+{
+    "workbench.colorCustomizations": {
+        "editor.selectionBackground": "#ff4757",
+        "editor.selectionHighlightBackground": "#7efa3796",
+        "editorSuggestWidget.selectedBackground": "#7f8c8d",
+        "editorSuggestWidget.highlightForeground": "#ff6a00",
+        "activityBar.background": "#1E3215",
+        "titleBar.activeBackground": "#2A471E",
+        "titleBar.activeForeground": "#F9FCF7"
+    },
+    "go.lintTool": "golangci-lint",
+    "gopls": {
+        "formatting.local": "github.com/happyxhw/tools"
+    },
+}

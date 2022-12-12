@@ -1,0 +1,70 @@
+#!/bin/python3
+
+import argparse
+import os
+import subprocess
+import sys
+
+parser = argparse.ArgumentParser(description='k8s shortcut')
+
+parser.add_argument('action', type=str, help='k8s command: logs, exec')
+parser.add_argument('pod', type=str, help='k8s pod name')
+
+parser.add_argument('-n', type=str, help='k8s namespaces')
+
+# exec
+parser.add_argument('-s', type=str, default='sh', help='exec: shell')
+
+# logs
+parser.add_argument('-t', '--tail', type=int,
+                    default=20, help='logs: tail count')
+parser.add_argument('-f', type=bool, default=True, help='logs: follow')
+
+args = parser.parse_args()
+
+print(args)
+
+kc = 'kubectl'
+if args.n:
+    kc += ' -n %s' % args.n
+
+cmd = "%s get pods | grep -E '%s' | awk '{print $1}'" % (kc, args.pod)
+
+print('exec: ', cmd)
+
+p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+
+res = p.communicate()
+if len(res) == 0:
+    sys.exit(0)
+
+pods = res[0].strip().decode("utf-8")
+pods = pods.split('\n')
+if len(pods) == 0:
+    sys.exit(0)
+
+for i, p in enumerate(pods):
+    print('pod-%d: %s' % (i, p))
+
+pod_index = 0
+if len(pods) > 1:
+    try:
+        pod_index = int(input('please enter pod index, default 0: '))
+    except Exception:
+        pod_index = 0
+if pod_index >= len(pods):
+    pod_index = 0
+
+pod = pods[pod_index]
+cmd = kc
+if args.action == 'exec':
+    cmd = '%s exec -it %s -- %s' % (cmd, pod, args.s)
+elif args.action == 'logs':
+    if args.f:
+        cmd = '%s logs --tail=%d -f %s' % (cmd, args.tail, pod)
+    else:
+        cmd = '%s logs --tail=%d %s' % (cmd, args.tail, pod)
+
+print('exec: ', cmd)
+
+os.system(cmd)
